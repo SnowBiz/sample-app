@@ -1,6 +1,1 @@
-# sample-app
-# sample-app
-# sample-app
-# sample-app
-# sample-app
-# sample-app
+Sample K8s job for pushing to S3.
