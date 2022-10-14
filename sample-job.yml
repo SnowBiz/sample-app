@@ -60,7 +60,7 @@ spec:
         - name: samply-python-job
           command: ["/bin/sh","-c"]
           args: ["curl -O https://bootstrap.pypa.io/pip/2.7/get-pip.py; python get-pip.py --user; export PATH=/root/.local/bin:$PATH; pip install boto3; python /tmp/sample.py"]
-          image: public.ecr.aws/amazonlinux/amazonlinux:latest
+          image: 799671149195.dkr.ecr.us-east-1.amazonaws.com/app-sample:latest
           volumeMounts:
           - name: configmap-volume
             mountPath: /tmp/sample.py
