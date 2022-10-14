@@ -13,6 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Setup Python
+      uses: actions/setup-python@v4.3.0
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag app-sample:$(date +%s)
     - name: Configure AWS credentials
