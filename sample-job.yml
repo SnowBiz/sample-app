@@ -1,0 +1,73 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-configmap
+  namespace: app-sample
+data:
+  sample.py: |-
+    #!/usr/bin/env python
+    import boto3
+    import os
+   
+    # Create STS Client
+    sts_client = boto3.client('sts', region_name='us-east-1')
+    
+    # Read the WebIdentityToken
+    with open('/var/run/secrets/eks.amazonaws.com/serviceaccount/token', 'r') as file:
+      token_data = file.read().replace('\n', '')
+    
+    # Execute AssumeRoleWithWebIdentity using provided token from the admissions controller
+    response = sts_client.assume_role_with_web_identity(
+        RoleArn='arn:aws:iam::799671149195:role/fargate-serverless-svc-python-s3-irsa',
+        RoleSessionName='svc-python-s3',
+        WebIdentityToken=token_data,
+        DurationSeconds=900
+    )
+    
+    # Grab temporary credentials from STS client response
+    credentials=response['Credentials']
+    
+    # Use temporary credentials to create S3 resource
+    s3_resource = boto3.resource(
+      's3', region_name='us-east-1',
+      aws_access_key_id=credentials['AccessKeyId'],
+      aws_secret_access_key=credentials['SecretAccessKey'],
+      aws_session_token=credentials['SessionToken'],
+    )
+    
+    # File contents to write to S3
+    content="Random data being written to S3!"
+
+    # Create file in referenced S3 bucket
+    s3_resource.Object('app-sample-bucket-278462536478', 'newfile.txt').put(Body=content)
+    
+    # Print success message
+    print("Created new file in S3 bucket!")
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: jobs-simple-job
+  namespace: app-sample
+spec:
+  template:
+    spec:
+      serviceAccountName: svc-python-s3
+      restartPolicy: Never
+      containers:
+        - name: samply-python-job
+          command: ["/bin/sh","-c"]
+          args: ["curl -O https://bootstrap.pypa.io/pip/2.7/get-pip.py; python get-pip.py --user; export PATH=/root/.local/bin:$PATH; pip install boto3; python /tmp/sample.py"]
+          image: public.ecr.aws/amazonlinux/amazonlinux:latest
+          volumeMounts:
+          - name: configmap-volume
+            mountPath: /tmp/sample.py
+            readOnly: true
+            subPath: sample.py
+      volumes:
+      - name: configmap-volume
+        configMap:
+          defaultMode: 0700
+          name: my-configmap
