@@ -9,7 +9,7 @@ on:
 jobs:
 
   build:
-    runs-on: public.ecr.aws/amazonlinux/amazonlinux:latest
+    runs-on: ubuntu
 
     steps:
     - uses: actions/checkout@v3
